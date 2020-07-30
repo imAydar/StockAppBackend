@@ -153,6 +153,7 @@
     <Compile Include="Helpers\JilFormatter.cs" />
     <Compile Include="Models\Document.cs" />
     <Compile Include="Models\DocumentRow.cs" />
+    <Compile Include="Models\Ware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

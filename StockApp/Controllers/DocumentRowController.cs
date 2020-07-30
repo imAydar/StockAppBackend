@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 using System.Web.SessionState;
 namespace StockApp.Controllers
 {
-    [SessionState(SessionStateBehavior.ReadOnly)]
     public class DocumentRowController : ApiController
     {
         // GET api/docuemntrow/5

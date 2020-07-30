@@ -14,4 +14,5 @@ namespace StockApp.Models
         public int HasToBeQuantity { get; set; }
         public Document Document { get; set; }
     }
+
 }

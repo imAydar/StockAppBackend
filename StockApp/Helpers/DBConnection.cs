@@ -33,25 +33,23 @@ namespace StockApp.Helpers
             connection1c = connector.Connect(connectStr);
         }
 
-        public static List<Document> GetLastDocuments(int amount = 20)
+        public static IEnumerable<Document> GetLastDocuments(int amount = 20)
         {
-            var documents = new List<Document>();
-            dynamic dataArray1C = connection1c.Документы.ИнвентаризацияТоваровНаСкладе.Выбрать(null, null, null, "Дата убыв");
+            dynamic dataArray1C = connection1c.Документы.ИнвентаризацияТоваровНаСкладе.Выбрать(null, null, null, "Дата убыв");//Get selection of last documents
 
             int ind = 0;
             while (dataArray1C.Следующий() == true)
             {
-                documents.Add(new Document()
+                yield return new Document()
                 {
                     Number = dataArray1C.Номер,
                     Date = dataArray1C.Дата,
                     Owner = dataArray1C.Ответственный.Наименование,
                     Comment = dataArray1C.Комментарий
-                });
+                };
                 ind++;
                 if (ind >= amount) break;
             }
-            return documents;
         }
 
         public static IEnumerable<DocumentRow> GetRows(string DocumentCode, DateTime DocumentDate)
@@ -80,8 +78,8 @@ namespace StockApp.Helpers
             if (ware == null)
                 return "Ошибка: не была найдена номенклатура";
 
-            if (AddRow(ware))
-                return ware.Код;
+            if (AddRow(ware, comDocJbj))
+                return ware.Код + ";" + ware.Наименование;
 
             return "Ошибка: не удалось добавить номенклатуру";
         }
