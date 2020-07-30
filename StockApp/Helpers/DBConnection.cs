@@ -76,10 +76,14 @@ namespace StockApp.Helpers
 
             dynamic ware = GetWare(Row.Barcode);
             if (ware == null)
+            {
                 return "Ошибка: не была найдена номенклатура";
+            }
 
             if (AddRow(ware, comDocJbj))
+            {
                 return ware.Код + ";" + ware.Наименование;
+            }
 
             return "Ошибка: не удалось добавить номенклатуру";
         }
