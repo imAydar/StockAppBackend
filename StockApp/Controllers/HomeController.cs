@@ -8,6 +8,7 @@ namespace StockApp.Controllers
 {
     public class HomeController : Controller
     {
+        [Auth.BasicAutheentication]
         public ActionResult Index()
         {
             return View();

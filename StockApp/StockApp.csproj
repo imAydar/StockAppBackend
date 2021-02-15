@@ -47,10 +47,6 @@
     <PrecompileBeforePublish>true</PrecompileBeforePublish>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Interop.V83">
-      <HintPath>..\..\..\..\Visual Studio 2010\Projects\ServWatcher2\ServWatcher\bin\Interop.V83.dll</HintPath>
-      <EmbedInteropTypes>True</EmbedInteropTypes>
-    </Reference>
     <Reference Include="Jil, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Jil.2.0.0\lib\net45\Jil.dll</HintPath>
@@ -63,7 +59,11 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.IdentityModel.Tokens.Jwt">
+      <HintPath>..\..\..\..\filedata\System.IdentityModel.Tokens.Jwt.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -142,10 +142,15 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Auth\BasicAutheenticationAttribute.cs" />
+    <Compile Include="Auth\UserSecurity.cs" />
+    <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\DocumentRowController.cs" />
     <Compile Include="Controllers\DocumentController.cs" />
+    <Compile Include="Controllers\FindController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\ValuesController.cs" />
+    <Compile Include="Controllers\WareController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -153,7 +158,11 @@
     <Compile Include="Helpers\JilFormatter.cs" />
     <Compile Include="Models\Document.cs" />
     <Compile Include="Models\DocumentRow.cs" />
+    <Compile Include="Models\User.cs" />
+    <Compile Include="Models\WareInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\DBRepository.cs" />
+    <Compile Include="Repositories\IDBRepository.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\themes\base\images\ui-bg_flat_0_aaaaaa_40x100.png" />
@@ -261,6 +270,17 @@
   <ItemGroup>
     <Content Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="V83">
+      <Guid>{98AC3B5B-5323-418F-8F07-E32F231D2393}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
@@ -275,7 +295,7 @@
     <VisualStudio>
       <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
         <WebProjectProperties>
-          <UseIIS>True</UseIIS>
+          <UseIIS>False</UseIIS>
           <AutoAssignPort>False</AutoAssignPort>
           <DevelopmentServerPort>13548</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>

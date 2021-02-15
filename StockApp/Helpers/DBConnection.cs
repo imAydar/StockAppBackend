@@ -16,21 +16,23 @@ namespace StockApp.Helpers
 
         static DBConnection()
         {
-                Connect();
+            Connect();
         }
 
         private static void Connect()
         {
-
-            var connector = new COMConnector();
             var settings = ConfigurationManager.ConnectionStrings
                                            .Cast<ConnectionStringSettings>()
                                            .Where(c => c.Name == "V83").FirstOrDefault();
-            String connectStr = settings.ConnectionString;
-            connector.PoolCapacity = 10;
-            connector.PoolTimeout = 60;
-            connector.MaxConnections = 12;
-            connection1c = connector.Connect(connectStr);
+            String connectionStr = settings.ConnectionString;
+
+            COMConnector connector = new COMConnector()
+            {
+                PoolCapacity = 10,
+                PoolTimeout = 60,
+                MaxConnections = 12
+            };
+            connection1c = connector.Connect(connectionStr);
         }
 
         public static IEnumerable<Document> GetLastDocuments(int amount = 20)
@@ -48,13 +50,14 @@ namespace StockApp.Helpers
                     Comment = dataArray1C.Комментарий
                 };
                 ind++;
-                if (ind >= amount) break;
+                if (ind == amount - 1) break;
             }
         }
 
         public static IEnumerable<DocumentRow> GetRows(string DocumentCode, DateTime DocumentDate)
         {
             dynamic comDocument = connection1c.Документы.ИнвентаризацияТоваровНаСкладе.НайтиПоНомеру(DocumentCode, DocumentDate);
+
             foreach (var row in comDocument.Товары)
             {
                 yield return new DocumentRow()
@@ -88,22 +91,22 @@ namespace StockApp.Helpers
             return "Ошибка: не удалось добавить номенклатуру";
         }
 
-        private static dynamic GetWare(string Barcode)
+        public static IEnumerable<WareInfoDTO> GetWare(string Barcode)
         {
             dynamic query = connection1c.NewObject("Запрос");
             query.Текст = @"ВЫБРАТЬ
-	            Штрихкоды.Владелец как ссылка
+	            Штрихкоды.Владелец.Наименование как Наименование
             ИЗ
 	            РегистрСведений.Штрихкоды КАК Штрихкоды
             ГДЕ
 	            Штрихкоды.Штрихкод = &Штрихкод";
+
             query.УстановитьПараметр("Штрихкод", Barcode);
             dynamic req = query.Выполнить().Выбрать();
             while (req.Следующий())
             {
-                return req.Ссылка;
+                yield return new WareInfoDTO() { Name = req.Наименование, Barecode = Barcode };
             }
-            return null;
         }
 
         private static Boolean AddRow(dynamic Ware, dynamic Doc)
@@ -127,6 +130,80 @@ namespace StockApp.Helpers
                 return false;
             }
             return true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Barcode"></param>
+        /// <returns>Collection of WareInfo objects, empty collection if theres none</returns>
+        public static IEnumerable<WareInfo> GetWareInfo(string Barcode)
+        {
+            dynamic query = connection1c.NewObject("Запрос");
+            query.Text = @"ВЫБРАТЬ
+	ТоварыВРозницеОстатки.Склад.Наименование как склад,
+	ТоварыВРозницеОстатки.Номенклатура.Наименование как товар,
+	ТоварыВРозницеОстатки.КоличествоОстаток как остаток,
+	ЦеныАТТСрезПоследних.Цена как цена
+ИЗ
+	РегистрНакопления.ТоварыВРознице.Остатки КАК ТоварыВРозницеОстатки
+		ВНУТРЕННЕЕ СОЕДИНЕНИЕ РегистрСведений.Штрихкоды КАК Штрихкоды
+		ПО ТоварыВРозницеОстатки.Номенклатура = Штрихкоды.Владелец
+		ВНУТРЕННЕЕ СОЕДИНЕНИЕ РегистрСведений.ЦеныАТТ.СрезПоследних КАК ЦеныАТТСрезПоследних
+		по ТоварыВРозницеОстатки.Номенклатура = ЦеныАТТСрезПоследних.Номенклатура 
+ГДЕ " +
+    "Штрихкоды.Штрихкод в (\"" + Barcode + "\") " +
+    @"И ТоварыВРозницеОстатки.Склад = ЦеныАТТСрезПоследних.Склад 
+                упорядочить по товар";
+            dynamic req = query.Выполнить().Выбрать();
+            while (req.Следующий())
+            {
+                yield return new WareInfo {
+                    Barecode = Barcode,
+                    Name = req.Товар,
+                    Store = req.склад,
+                    Remain = Convert.ToString(req.остаток) + " шт.",
+                    Price = Convert.ToString(req.Цена) + " руб."
+                };
+            }
+        }
+       
+        /// <summary>
+        /// returns base info of particular ware 
+        /// </summary>
+        /// <param name="Name"></param>
+        /// <returns>Collection of WareInfo objects, empty collection if theres none</returns>
+        public static IEnumerable<WareInfoDTO> GetWaresInfo(string Name)
+        {
+            Name = "%" + Name.Replace(" ", "%") + "%";
+
+            dynamic query = connection1c.NewObject("Запрос");
+            string text = @"ВЫБРАТЬ
+	               	ТоварыВРозницеОстатки.Номенклатура.наименование как наименование,
+	               	ТоварыВРозницеОстатки.Номенклатура.Родитель как Родитель,
+	               	ТоварыВРозницеОстатки.Номенклатура.Код как Код,
+	               	ТоварыВРозницеОстатки.Номенклатура.Артикул как Артикул,
+	               	ТоварыВРозницеОстатки.Номенклатура.НоменклатурнаяГруппа КАК НомГруппа,
+                    Штрихкоды.Штрихкод как штрихкод
+	               ИЗ
+	               	РегистрНакопления.ТоварыВРознице.Остатки(, Номенклатура.Наименование ПОДОБНО """ + Name + @""") КАК ТоварыВРозницеОстатки
+                        левое СОЕДИНЕНИЕ РегистрСведений.Штрихкоды КАК Штрихкоды
+		            ПО ТоварыВРозницеОстатки.Номенклатура = Штрихкоды.Владелец
+	               ГДЕ
+	               	ТоварыВРозницеОстатки.КоличествоОстаток <> 0
+	               УПОРЯДОЧИТЬ ПО
+	               	ТоварыВРозницеОстатки.Номенклатура.Наименование";
+            query.Text = text;
+
+            dynamic req = query.Выполнить().Выбрать();
+            while (req.Следующий())
+            {
+                yield return new WareInfoDTO()
+                {
+                    Name = req.наименование,
+                    Barecode = req.штрихкод
+                };
+            }
         }
 
     }
